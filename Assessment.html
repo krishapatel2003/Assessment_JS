@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dynamic Image Slider with Arrows and Unique Animation</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <style>
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 32px;
+      color: white;
+    }
+
+    /* Slider container - centralized with max width */
+    .slider-container {
+      background: rgba(255 255 255 / 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 720px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      user-select: none;
+    }
+
+    /* Main displayed image styling */
+    .slider-main-image {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #222;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The image inside main display with animation */
+    .slider-main-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 16px;
+
+      /* Animate fade and scale on image change */
+      opacity: 0;
+      transform: scale(1.05);
+      animation-fill-mode: forwards;
+      animation-duration: 0.6s;
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Keyframes for fade in and scale down */
+    @keyframes fadeScaleIn {
+      from {
+        opacity: 0;
+        transform: scale(1.05);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Side arrow buttons container */
+    .arrow-button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.3);
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .arrow-button:hover,
+    .arrow-button:focus {
+      background: rgba(0,0,0,0.6);
+      outline: none;
+    }
+
+    .arrow-button:active {
+      background: rgba(0,0,0,0.8);
+    }
+
+    /* Left arrow positioning */
+    .arrow-left {
+      left: 16px;
+    }
+
+    /* Right arrow positioning */
+    .arrow-right {
+      right: 16px;
+    }
+
+    /* Thumbnails container with horizontal scrolling */
+    .slider-thumbnails {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    /* Scrollbar styling for thumbnails */
+    .slider-thumbnails::-webkit-scrollbar {
+      height: 8px;
+    }
+    .slider-thumbnails::-webkit-scrollbar-thumb {
+      background: rgba(255 255 255 / 0.3);
+      border-radius: 4px;
+    }
+    .slider-thumbnails::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* Each thumbnail container */
+    .thumbnail {
+      flex: 0 0 auto;
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 3px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Thumbnail image styling */
+    .thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    /* Hover effect on thumbnail */
+    .thumbnail:hover img {
+      transform: scale(1.15);
+    }
+
+    /* Active thumbnail highlight */
+    .thumbnail.active {
+      border-color: #ffffff;
+      box-shadow: 0 0 8px 3px rgba(255 255 255 / 0.7);
+      z-index: 2;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="slider-container" aria-label="Image slider with thumbnails and arrows" role="region">
+    <!-- Main image placeholder -->
+    <div class="slider-main-image" aria-live="polite" aria-atomic="true" tabindex="0">
+      <!-- Arrows will be inserted dynamically -->
+    </div>
+
+    <!-- Thumbnails container -->
+    <div class="slider-thumbnails" role="list" aria-label="Select image thumbnails"></div>
+  </div>
+
+  <script>
+    
+    const images = [
+      {
+        url: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/208c8f26-f29e-4f80-a384-56e3c5599a09.png',
+        alt: 'Stunning purple mountains landscape with clouds and valley'
+      },
+      {
+        url: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9d919590-3744-4db7-9b8b-97479c88253d.png',
+        alt: 'Bright blue ocean waves crashing against rocks in sunlight'
+      },
+      {
+        url: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/81c039db-fed6-4bcd-a273-be5ce88e22b9.png',
+        alt: 'Fresh green forest with sun rays breaking through dense trees'
+      },
+      {
+        url: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/66f6ee8d-9d28-4b53-953e-e791ff1d9e43.png',
+        alt: 'Golden sunset sky with vibrant clouds over calm lake'
+      },
+      {
+        url: 'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/4615426c-1a43-4b8d-951a-98e27ea83df6.png',
+        alt: 'Red desert sand dunes under bright clear sunny sky'
+      }
+    ];
+
+    // Keep track of currently displayed image index
+    let currentIndex = 0;
+
+    // Grab main containers from DOM
+    const mainImageContainer = document.querySelector('.slider-main-image');
+    const thumbnailsContainer = document.querySelector('.slider-thumbnails');
+
+   
+    function createImageElement(src, alt) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = alt;
+      img.draggable = false; // Disable drag to improve UX
+      return img;
+    }
+
+    
+    function setMainImage(index) {
+      // Clear main image container
+      mainImageContainer.innerHTML = '';
+
+      // Create new image element
+      const img = createImageElement(images[index].url, images[index].alt);
+
+      // Apply fade and scale animation class via inline style animationName
+      img.style.animationName = 'fadeScaleIn';
+
+      // Append newly created image
+      mainImageContainer.appendChild(img);
+
+      // Append arrow buttons back after clearing
+      mainImageContainer.appendChild(leftArrowButton);
+      mainImageContainer.appendChild(rightArrowButton);
+    }
+
+    
+    function createThumbnail(imageData, index) {
+      const thumbDiv = document.createElement('div');
+      thumbDiv.classList.add('thumbnail');
+      thumbDiv.setAttribute('role', 'listitem');
+      thumbDiv.setAttribute('tabindex', '0');  // Make focusable for keyboard nav
+      thumbDiv.setAttribute('aria-label', `Select image ${index + 1}: ${imageData.alt}`);
+
+      // Create image element inside thumbnail container
+      const thumbImg = createImageElement(imageData.url, imageData.alt);
+      thumbDiv.appendChild(thumbImg);
+
+      // Update main image and highlight when clicked
+      thumbDiv.addEventListener('click', () => {
+        updateActiveThumbnail(index);
+      });
+
+      // Keyboard accessibility: space/enter keys select thumbnail
+      thumbDiv.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          updateActiveThumbnail(index);
+        }
+      });
+
+      return thumbDiv;
+    }
+
+    
+    function updateActiveThumbnail(newIndex) {
+      if (newIndex < 0) newIndex = images.length - 1;
+      else if (newIndex >= images.length) newIndex = 0;
+
+      currentIndex = newIndex;
+
+      // Remove active class from all thumbnails 
+      thumbnailsContainer.querySelectorAll('.thumbnail').forEach((thumb) => {
+        thumb.classList.remove('active');
+      });
+
+      // Add active class to current thumbnail
+      const activeThumb = thumbnailsContainer.children[currentIndex];
+      if (activeThumb) {
+        activeThumb.classList.add('active');
+        activeThumb.focus();
+      }
+
+      // Update main image view with animation
+      setMainImage(currentIndex);
+    }
+
+    /**
+     * Move to the previous image in slider, cycling if at start
+     */
+    function showPreviousImage() {
+      updateActiveThumbnail(currentIndex - 1);
+    }
+
+    /**
+     * Move to the next image in slider, cycling if at end
+     */
+    function showNextImage() {
+      updateActiveThumbnail(currentIndex + 1);
+    }
+
+    
+    function createArrowButton(direction, onClickHandler) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.classList.add('arrow-button');
+      btn.classList.add(direction === 'left' ? 'arrow-left' : 'arrow-right');
+      btn.setAttribute('aria-label', direction === 'left' ? 'Previous Image' : 'Next Image');
+      btn.title = btn.getAttribute('aria-label');
+      btn.tabIndex = 0;
+
+      // Create material icon span
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'material-icons';
+      iconSpan.textContent = direction === 'left' ? 'chevron_left' : 'chevron_right';
+
+      btn.appendChild(iconSpan);
+
+      // Add click event listener
+      btn.addEventListener('click', onClickHandler);
+
+      // Keyboard: Also allow Enter or Space to trigger
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClickHandler();
+        }
+      });
+
+      return btn;
+    }
+
+    /** Initialize the slider - create thumbnails, main image, arrows and event listeners */
+    function initializeSlider() {
+      // Create and append thumbnails dynamically
+      images.forEach((imageData, idx) => {
+        const thumb = createThumbnail(imageData, idx);
+        thumbnailsContainer.appendChild(thumb);
+      });
+
+      // Initialize arrows and append to main image container
+      leftArrowButton = createArrowButton('left', showPreviousImage);
+      rightArrowButton = createArrowButton('right', showNextImage);
+
+      // Set the first image active by default
+      updateActiveThumbnail(0);
+    }
+
+    // Variables to hold arrow buttons for easy re-append after image changes
+    let leftArrowButton = null;
+    let rightArrowButton = null;
+
+    // Initialize slider after DOM content loaded
+    window.addEventListener('DOMContentLoaded', initializeSlider);
+
+  </script>
+</body>
+</html>
+
